@@ -16,11 +16,21 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Locate project folder
+        id: locate
+        shell: bash
         run: |
-          pip install -r requirements.txt
+          FILE=$(find . -name "main.py" | head -n 1)
+          DIR=$(dirname "$FILE")
+          echo "พบโปรเจกต์ที่: $DIR"
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        working-directory: ${{ steps.locate.outputs.dir }}
+        run: pip install -r requirements.txt
 
       - name: Build EXE with PyInstaller
+        working-directory: ${{ steps.locate.outputs.dir }}
         run: |
           pyinstaller --noconfirm --onefile --windowed `
             --name "AutoClickerPro" `
@@ -32,4 +42,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AutoClickerPro-Windows-EXE
-          path: dist/AutoClickerPro.exe
+          path: ${{ steps.locate.outputs.dir }}/dist/AutoClickerPro.exe
