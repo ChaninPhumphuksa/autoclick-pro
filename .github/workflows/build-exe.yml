@@ -1,45 +1,43 @@
 name: Build Windows EXE
 
+# รันอัตโนมัติทุกครั้งที่ push ขึ้น branch main หรือกดรันเองจากแท็บ Actions
 on:
-  workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [ "main", "master" ]
+  workflow_dispatch: {}
 
 jobs:
   build:
     runs-on: windows-latest
+
+    # สำคัญ: โปรเจกต์อยู่ในโฟลเดอร์ย่อย autoclicker_pro/ ไม่ใช่ root ของ repo
+    # จึงต้องกำหนด working-directory ทุกสเต็ปที่รันคำสั่งภายในโปรเจกต์
+    defaults:
+      run:
+        working-directory: autoclicker_pro
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Locate project folder
-        id: locate
-        shell: bash
-        run: |
-          FILE=$(find . -name "main.py" | head -n 1)
-          DIR=$(dirname "$FILE")
-          echo "พบโปรเจกต์ที่: $DIR"
-          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
-
       - name: Install dependencies
-        working-directory: ${{ steps.locate.outputs.dir }}
         run: pip install -r requirements.txt
 
       - name: Build EXE with PyInstaller
-        working-directory: ${{ steps.locate.outputs.dir }}
-        run: |
-          pyinstaller --noconfirm --onefile --windowed `
-            --name "AutoClickerPro" `
-            --add-data "profiles;profiles" `
-            --add-data "macros;macros" `
-            main.py
+        run: >
+          pyinstaller --noconfirm --onefile --windowed
+          --name "AutoClickerPro"
+          --icon "assets/icon.ico"
+          --add-data "assets;assets"
+          main.py
 
       - name: Upload EXE artifact
         uses: actions/upload-artifact@v4
         with:
           name: AutoClickerPro-Windows-EXE
-          path: ${{ steps.locate.outputs.dir }}/dist/AutoClickerPro.exe
+          path: autoclicker_pro/dist/AutoClickerPro.exe
